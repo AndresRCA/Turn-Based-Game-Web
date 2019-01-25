@@ -3,11 +3,7 @@ import { Mechanics } from '../interfaces/Mechanics';
 import { Player } from './Player';
 import { PlayerStatus, EnemyStatus } from '../enums/Status';
 import Characters from '../assets/characters';
-
-//generates a whole number that is within the range of number_of_skills
-function getNextInt(range: number): number {
-    return Math.floor(Math.random() * range)  + 1;
-}
+import { getNextInt } from '../game_resources/ordinary_functions';
 
 export class Thief extends Player implements PlayerInt, Mechanics {
 

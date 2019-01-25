@@ -2,11 +2,7 @@ import { Mechanics } from '../interfaces/Mechanics';
 import { Unit } from './Unit';
 import { EnemyStatus } from '../enums/Status';
 import Monsters from '../assets/monsters';
-
-//generates a whole number that is within the range of number_of_skills
-function getNextInt(range: number): number {
-	return Math.floor(Math.random() * range)  + 1;
-}
+import { getNextInt } from '../game_resources/ordinary_functions';
 
 export class Monster extends Unit implements Mechanics {
     
