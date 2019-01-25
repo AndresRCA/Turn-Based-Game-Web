@@ -169,7 +169,7 @@ export abstract class Unit {
         }
         
         if((this.speed_buff - this.speed_enhance) > 0 && this.speed_up){
-           this.speed--;
+            this.speed--;
             this.speed_buff--;
             if((this.speed_buff - this.speed_enhance) <= 0) this.speed_up = false;
         }
