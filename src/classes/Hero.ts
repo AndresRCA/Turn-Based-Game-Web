@@ -79,6 +79,27 @@ export class Hero extends Player implements PlayerInt, Mechanics {
         return 0;
     }
     
+    // prepare for some spooky recursion + bad argument naming (recursion_stopper)
+    public testChance(skill: number, enemy_def: number, recursion_stopper?: number): number {        
+        let recursion_limit: number = recursion_stopper || 0;
+        if(recursion_limit >= 15) {
+            return EnemyStatus.NO_SKILL_MP;
+        }
+
+        let damage: number = this.skills(skill,enemy_def,false);
+        if(damage != EnemyStatus.NO_MP && damage != EnemyStatus.NO_BUFF && damage != EnemyStatus.BUFF_USED) { // checks every non-attack skill and no mana situations (order: no mana, status effect can't be used, status effect already used)
+            return damage; // An attack skill was used, I think
+        }
+        else if(damage == EnemyStatus.NO_MP || damage == EnemyStatus.NO_BUFF) {
+            let chance: number = getNextInt(this.number_of_skills);
+            this.testChance(chance,enemy_def,++recursion_limit); // try another skill
+        }
+        else if(damage == EnemyStatus.BUFF_USED) {
+            return EnemyStatus.BUFF_USED; // reference for when effect is applied
+        }
+        return EnemyStatus.NO_SKILL_MP; // it will never return this
+    }
+    
     //implemented
     public printSkills(): void {
         console.log("1.Wish (-9 mana)          2.Destroy (-4 mana)");
@@ -130,25 +151,6 @@ export class Hero extends Player implements PlayerInt, Mechanics {
     		default:
     			return PlayerStatus.WRONG_CHOICE;
     	}
-    }
-
-    // prepare for some spooky recursion + bad argument naming (recursion_stopper)
-    public testChance(skill: number, enemy_def: number, recursion_stopper?: number): number {        
-        let recursion_limit: number = recursion_stopper || 0;
-        if(recursion_limit >= 15) {
-        	return EnemyStatus.NO_SKILL_MP;
-        }
-
-        let damage: number = this.skills(skill,enemy_def,false);
-        if(damage != EnemyStatus.NO_MP && damage != EnemyStatus.NO_BUFF && damage != EnemyStatus.BUFF_USED) { // checks every non-attack skill and no mana situations (order: no mana, status effect can't be used, status effect already used)
-            return damage; // An attack skill was used, I think
-        }else if(damage == EnemyStatus.NO_MP || damage == EnemyStatus.NO_BUFF){
-            let chance: number = getNextInt(this.number_of_skills);
-            this.testChance(chance,enemy_def,++recursion_limit); // try another skill
-        }else if(damage == EnemyStatus.BUFF_USED){
-            return EnemyStatus.BUFF_USED; // reference for when effect is applied
-        }      
-        return EnemyStatus.NO_SKILL_MP; // it will never return this
     }
 
     //implemented
