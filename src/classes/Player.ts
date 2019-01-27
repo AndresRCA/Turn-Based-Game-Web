@@ -12,12 +12,10 @@ export abstract class Player extends Unit {
 	}
 
 	public hpPotion(): void {
-        console.log("+5 hp recovered");
         this.hp = (this.hp + 5 >= this.max_hp)? this.max_hp : this.hp + 5;
     }
    
     public mpPotion(): void {
-        console.log("+5 mp recovered");
         this.mp = (this.mp + 5 >= this.max_mp)? this.max_mp : this.mp + 5;
     }
     

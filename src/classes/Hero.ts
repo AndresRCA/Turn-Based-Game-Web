@@ -33,16 +33,18 @@ export class Hero extends Player implements PlayerInt, Mechanics {
     	let hp = this.hp;
     	let max_hp = this.max_hp;
 
-        if(isPlayer){
-            if(mp < 9){
-                return PlayerStatus.WRONG_CHOICE;
-            }else{
+        if(isPlayer) {
+            if(mp < 9) {
+                return PlayerStatus.NO_MP;
+            }
+            else {
                 this.mp = (mp - 9 <= 0)? 0 : mp - 9;
                 this.hp = max_hp;
                 console.log("Heavens above have granted your celestial wish.");
                 return PlayerStatus.BUFF_USED;
             }    
-        }else{ // Enemy is "true", Player is "false"
+        }
+        else { // Enemy is "true", Player is "false"
         	if(mp < 6) {
         		return EnemyStatus.NO_MP;
         	}
@@ -51,20 +53,20 @@ export class Hero extends Player implements PlayerInt, Mechanics {
 	            this.hp = max_hp;
 	            console.log("Heavens above have granted your celestial wish.");
 	            return EnemyStatus.BUFF_USED;
-        	}            
+        	}
         }
     }
     
     private crush(): number {
     	let mp = this.mp;
 
-        if(mp < 4){
+        if(mp < 4) {
             return 0;
         }
-        else{
+        else {
             this.mp = (mp - 4 <= 0)? 0 : mp - 4;
             return this.magic + 6;
-        }   
+        }
     }
     
     private strengthUp(isPlayer: boolean): number {
@@ -187,11 +189,11 @@ export class Hero extends Player implements PlayerInt, Mechanics {
         this.max_exp += this.newMaxExp();
         
         console.log("");
-        if(this.lvl == 3){
+        if(this.lvl == 3) {
             this.strengthUp_en = true;
             console.log("New skill learned!!: Strength Up");
         }
-        if(this.lvl == 4){
+        if(this.lvl == 4) {
             this.judgement_en = true;
             console.log("New skill learned!!: Judgement");
         }

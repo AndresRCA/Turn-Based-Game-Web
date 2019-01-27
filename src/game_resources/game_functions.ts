@@ -6,23 +6,8 @@ import Events from './events';
 import Dialogue from './dialogue';
 import { getNextInt } from './ordinary_functions';
 
-function createElement(tag: string, options: { content: string; classes?: string[] }): HTMLElement {
-  let element: HTMLElement = document.createElement(tag)
-  if(options.classes && options.classes.length) {
-    options.classes.forEach(_class => {
-      element.className += `${_class} `;
-    });
-  }
-  if(options.content) element.innerHTML = options.content;
-  return element;
-}
-
 function dialogue(dialogue: string[], start: number, end: number): void {
 	// gameMessages goes here
-}
-
-function battlePhase(): void {
-
 }
 
 function events(player: Hero | Mage | Thief, area: string[][], row: number, column: number, dialogue: string[]): void {
@@ -122,5 +107,4 @@ function events(player: Hero | Mage | Thief, area: string[][], row: number, colu
 	}
 }
 
-export createElement;
 export events;
