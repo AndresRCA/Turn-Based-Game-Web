@@ -97,6 +97,7 @@ export default Vue.extend({
   	goFurther(): void {
   		let choice = this.choice;
   		let state = this.state;
+  		let parent = this.$parent.$data;
 
   		if(state == Menu.MAIN && choice != 3) {
   			switch(choice) {
@@ -114,9 +115,18 @@ export default Vue.extend({
 
   			if(!this.enemyIsDead()) {
   				this.enemyTurn();
+  				if(parent.player.getHp <= 0) {
+  					// game over...
+  					state = Menu.MAIN; // go back to the main menu
+  				}
+  				else {
+  					state = Menu.MAIN; // go back to the main menu
+  				}
   			}
   			else {
-  				this.battleIsOver(); // lol this battle is over
+  				this.battleIsOver(); // lol this battle is over  				
+  				parent.background = parent.area[parent.row][parent.column];
+  				parent.isBattling = false; // this is where the component gets destroyed, hopefully
   			}
   		}
   		else {

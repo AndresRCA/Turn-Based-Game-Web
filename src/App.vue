@@ -4,7 +4,7 @@
     <section id="gameScreen" class="nes-container flex-parent">
       <pre v-show="!main_prompt_on">{{ background }}</pre> <!-- shows scenery and battle art -->
       <component v-show="main_prompt_on" :is="main_prompt_state"></component> <!-- can be: menu or map -->
-      <BattleMenu v-show="isBattling" /> <!-- here goes the options -->
+      <BattleMenu v-if="isBattling" /> <!-- here goes the options -->
       <!-- newGamePrompt items go here -->
     </section>
 
@@ -19,8 +19,8 @@
       <button class="nes-btn" type="button" @click="move(Control.DOWN)">Down</button>
       <button class="nes-btn" type="button" @click="move(Control.LEFT)">Left</button>
       <button class="nes-btn" type="button" @click="move(Control.RIGHT)">Right</button>
-      <button class="nes-btn" type="button" @click="changeState('Map')">Map</button>
-      <button class="nes-btn" type="button" @click="changeState('Menu')">Menu</button>
+      <button class="nes-btn" :class="{'is-disabled': isBattling}" type="button" @click="changePromptState('Map')">Map</button>
+      <button class="nes-btn" :class="{'is-disabled': isBattling}" type="button" @click="changePromptState('Menu')">Menu</button>
     </section>
 
   </div>
@@ -28,13 +28,16 @@
 
 <script lang="ts">
 import Vue from 'vue';
-import { Hero } from './classes/Hero'
-import { Mage } from './classes/Mage'
-import { Thief } from './classes/Thief'
+import { Hero } from './classes/Hero';
+import { Mage } from './classes/Mage';
+import { Thief } from './classes/Thief';
+import { Monster } from './classes/Monster';
+import Characters from './assets/characters';
+import Monsters from './assets/monsters';
 import Art from './assets/ASCIIart';
 import Events from './game_resources/events';
 import Dialogue from './game_resources/dialogue';
-import { createElement } from './game_resources/ordinary_functions';
+import { getNextInt, createElement } from './game_resources/ordinary_functions';
 
 import Map from './components/Map.vue';
 import Menu from './components/Menu.vue';
@@ -48,6 +51,7 @@ enum Control { UP, DOWN, LEFT, RIGHT }
 
 interface Game {
   player: Hero | Mage | Thief;
+  enemy: Monster | Hero | Mage | Thief;
   area: string[][];
   row: number;
   column: number;
@@ -63,6 +67,7 @@ export default Vue.extend({
   data() {
     let data: Game = {
       player: new Hero(),
+      enemy: new Monster('', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
       area: [
         [ Art.Capital, Art.Forest ],
         [ Art.Grim_Reaper, Art.Dead_Tree ]
@@ -96,7 +101,7 @@ export default Vue.extend({
         }
       }
     },
-    changeState(newState: string): void {
+    changePromptState(newState: string): void {
       if(!this.isBattling) this.main_prompt_state = newState;
     },
     gameStart(): void {
@@ -105,6 +110,110 @@ export default Vue.extend({
         /*------------Events that occur after you arrive somewhere------------------------------------------*/
             
         // events(this.player, this.area, this.row, this.column, this.dialogue);
+      }
+    },
+    events(): void {
+      let player = this.player;
+      let area = this.area;
+      let row = this.row;
+      let column = this.column;
+      
+      if(Events.Capital_Dialogue && area[row][column] === Art.Capital) {
+        Events.Capital_Dialogue = false;                 
+        //dialogue(dialogue, 0, 2);
+      }
+
+      //Random generated encounter
+      if(Events.ready_to_fight/*just for now && (getNextInt(1) == 1)*/ && area[row][column] === Art.Forest) {
+        this.background = Monsters.Bug;
+        this.isBattling = true;
+        this.enemy = new Monster(Monsters.Bug, 20, 0, 3, 0, 1, 0, 0, 0, getNextInt(2)+1, 0); // incoming enemy
+      }
+      //Random generated encounter
+      if(!Events.Dead_Tree_Dialogue && !Events.Last_Boss_Fight && Events.ready_to_fight && getNextInt(1) == 1 && area[row][column] === Art.Dead_Tree) {
+        this.background = Monsters.Head;
+        this.isBattling = true;
+        this.enemy = new Monster(Monsters.Head, 27, 0, 7, 0, 3, 0, 0, 0, getNextInt(4)+3, 1); // incoming enemy
+      }
+
+      if(Events.Dead_Tree_Dialogue && area[row][column] === Art.Dead_Tree) {
+        Events.Dead_Tree_Dialogue = false;
+        Events.Return_to_Capital = true;
+          
+        //dialogue(dialogue,2,5);
+
+        //Dead_Tree fight here
+        this.background = Monsters.Head;
+        this.isBattling = true;
+        this.enemy = new Monster(Monsters.Head, 27, 0, 7, 0, 3, 0, 0, 0, 4, 1); // incoming enemy
+            
+        //dialogue(dialogue,5,8);
+      }
+
+      if(Events.Return_to_Capital && area[row][column] === Art.Capital) {
+        Events.Return_to_Capital = false;
+        /*There used to be a puzzle here but it's very stupid so I don't think I'll add it*/
+        /*Scanner input = new Scanner(System.in);
+        boolean puzzle_not_solved = true;
+        String options;
+            
+        //dialogue(dialogue,8,12);
+           
+        while(puzzle_not_solved){
+            boolean first = false, second = false, third = false;
+            console.log("Enter your keys (separate them with spaces)");
+            options = input.nextLine();
+            String[] keys;
+            Pattern pattern = Pattern.compile("\\s");
+            Matcher matcher = pattern.matcher(options);
+            if(matcher.find()){
+                keys = options.split(" ");
+                    
+                for(int i = 0; i < keys.length; i++){
+                    if(keys[i] != null){
+                        switch (keys[i]){
+                            case "1":
+                                first = true;
+                                break;
+                            case "2":
+                                second = true;
+                                break;
+                            case "3":
+                                third = true;
+                                break;
+                        }
+                    }    
+                }
+                
+                puzzle(first,second,third); 
+                //dialogue(dialogue,12,13);
+                console.log("Enter your answer (separate with spaces)");
+                options = input.nextLine();
+                String[] answer;
+                matcher = pattern.matcher(options);
+                    
+                if(matcher.find()){
+                    answer = options.split(" ");
+                    if(answer.length == 4){
+                        if(("star" === answer[0]) && ("moon" === answer[1]) && ("sun" === answer[2]) && ("dust" === answer[3])){
+                            puzzle_not_solved = false;
+                        }else console.log("You may have entered the wrong order, try again.");
+                    }else console.log("You either answered with too much words or too few.");
+                }else{console.log("Your answer doesn't contain spaces.");}
+                    
+            }else{console.log("Wrong pick, the keys contains spaces.");}
+        }*/
+        Events.Last_Boss_Fight = true;
+        console.log(area[row][column]);
+        console.log("There used to be a puzzle here but now there isn't, anyway head to the Dead Tree.");
+      }
+
+      if(Events.Last_Boss_Fight && area[row][column] === Art.Dead_Tree) {
+        Events.Last_Boss_Fight = false;
+        //Enemy object here, I'll make it a thief
+        this.background = Characters.Thief;
+        this.isBattling = true;
+        this.enemy = new Thief(54, 30, 10, 5, 11, 4, 15, 2); // for now there is no exp reward
       }
     },
     move(direction: Control): void {
@@ -117,27 +226,30 @@ export default Vue.extend({
         case Control.UP:
           if(row > 0) {
             row--;
+            this.events(); //events that occur after moving somewhere (includes changing the background)
           }
           break;
 
         case Control.DOWN:
           if(row < 1) {
             row++;
+            this.events(); //events that occur after moving somewhere (includes changing the background)
           }
           break;
 
         case Control.LEFT:
           if(column > 0) {
             column--;
+            this.events(); //events that occur after moving somewhere (includes changing the background)
           }
           break;
 
         case Control.RIGHT:
           if(column < 1) {
             column ++;
+            this.events(); //events that occur after moving somewhere (includes changing the background)
           }
       }
-      this.background = this.area[row][column]; //show new scenery
     }
   },
   components: {
