@@ -62,7 +62,7 @@ export class Hero extends Player implements PlayerInt, Mechanics {
     	let mp = this.mp;
 
         if(mp < 4) {
-            return 0;
+            return PlayerStatus.NO_MP;
         }
         else {
             this.mp = (mp - 4 <= 0)? 0 : mp - 4;
@@ -128,13 +128,14 @@ export class Hero extends Player implements PlayerInt, Mechanics {
      *              <li><b style="color:#42a0ce">*-{-1}</b>: (everything else except -1), if the choice made is the attack skill</li>
      *              <li><b style="color:#42a0ce">-1</b>: if the user makes a wrong choice</li>
      *          </ul>
-     */ 
+     */
+    
     //implemented
     public skills(choice: number, enemy_def: number, isPlayer: boolean): number {
     	switch(choice) {
-    		case 1: 
+    		case 1:
     			return this.wish(isPlayer);
-    		case 2: 
+    		case 2:
     			return this.crush(); //returns damage
     		case 3:
     			if(this.strengthUp_en) {
