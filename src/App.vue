@@ -2,7 +2,8 @@
   <div id="app">
 
     <section id="gameScreen" class="nes-container flex-parent">
-      <pre v-show="!main_prompt_on">{{ background }}</pre> <!-- shows scenery and battle art -->
+      <pre v-show="!main_prompt_on && !isBattling">{{ background }}</pre> <!-- shows scenery art -->
+      <pre v-show="isBattling">{{ battle_background }}</pre> <!-- shows battle art -->
       <component v-show="main_prompt_on" :is="main_prompt_state"></component> <!-- can be: menu or map -->
       <BattleMenu v-if="isBattling" /> <!-- here goes the options -->
       <!-- newGamePrompt items go here -->
@@ -15,10 +16,10 @@
     </section>
 
     <section id="control">
-      <button class="nes-btn" type="button" @click="move(Control.UP)">Up</button>
-      <button class="nes-btn" type="button" @click="move(Control.DOWN)">Down</button>
-      <button class="nes-btn" type="button" @click="move(Control.LEFT)">Left</button>
-      <button class="nes-btn" type="button" @click="move(Control.RIGHT)">Right</button>
+      <button class="nes-btn" type="button" @click="move(0)">Up</button>
+      <button class="nes-btn" type="button" @click="move(1)">Down</button>
+      <button class="nes-btn" type="button" @click="move(2)">Left</button>
+      <button class="nes-btn" type="button" @click="move(3)">Right</button>
       <button class="nes-btn" :class="{'is-disabled': isBattling}" type="button" @click="changePromptState('Map')">Map</button>
       <button class="nes-btn" :class="{'is-disabled': isBattling}" type="button" @click="changePromptState('Menu')">Menu</button>
     </section>
@@ -41,6 +42,7 @@ import { getNextInt, createElement } from './game_resources/ordinary_functions';
 
 import Map from './components/Map.vue';
 import Menu from './components/Menu.vue';
+import BattleMenu from './components/BattleMenu.vue';
 
 /*
 Plan: port the game from scratch, instead of a linear approach it will be handled with events,
@@ -56,7 +58,8 @@ interface Game {
   row: number;
   column: number;
   isBattling: boolean;
-  newGamePrompt: HTMLElement | null;
+  battle_background: string;
+  newGamePrompt: HTMLElement;
   main_prompt_state: string;
   main_prompt_on: boolean;
   main_prompt_message: string;
@@ -75,7 +78,8 @@ export default Vue.extend({
       row: 0,
       column: 0,
       isBattling: false,
-      newGamePrompt: null, // maybe get rid of this, not sure if I can do killPromptChildren(newGamePrompt) in mounted
+      battle_background: '',
+      newGamePrompt: document.createElement('div'),
       main_prompt_state: '',
       main_prompt_on: false,
       main_prompt_message: ''
@@ -95,22 +99,24 @@ export default Vue.extend({
       this.main_prompt_on = false;
     },
     killPromptChildren(): void {
-      if(this.newGamePrompt) {
-        while(this.newGamePrompt.firstChild) {
-          this.newGamePrompt.removeChild(this.newGamePrompt.firstChild);
+      if(this.newGamePrompt.parentNode) this.newGamePrompt.parentNode.removeChild(this.newGamePrompt);
+    },
+    changePromptState(newState: string): void {
+      if(!this.isBattling) { // someone could eliminate the is-disabled class
+        if(this.main_prompt_on && this.main_prompt_state == newState) {
+          this.main_prompt_on = false; // a toggle to close the prompt
+        }
+        else {
+          this.main_prompt_on = true;
+          this.main_prompt_state = newState;
         }
       }
     },
-    changePromptState(newState: string): void {
-      if(!this.isBattling) this.main_prompt_state = newState;
-    },
     gameStart(): void {
-      while(this.player.getHp() > 0) {
-        this.background = this.area[this.row][this.column];
-        /*------------Events that occur after you arrive somewhere------------------------------------------*/
-            
-        // events(this.player, this.area, this.row, this.column, this.dialogue);
-      }
+      this.background = this.area[this.row][this.column];
+      /*------------Events that occur after you arrive somewhere------------------------------------------*/
+          
+      // events(this.player, this.area, this.row, this.column, this.dialogue);
     },
     events(): void {
       let player = this.player;
@@ -125,13 +131,13 @@ export default Vue.extend({
 
       //Random generated encounter
       if(Events.ready_to_fight/*just for now && (getNextInt(1) == 1)*/ && area[row][column] === Art.Forest) {
-        this.background = Monsters.Bug;
+        this.battle_background = Monsters.Bug;
         this.isBattling = true;
         this.enemy = new Monster(Monsters.Bug, 20, 0, 3, 0, 1, 0, 0, 0, getNextInt(2)+1, 0); // incoming enemy
       }
       //Random generated encounter
       if(!Events.Dead_Tree_Dialogue && !Events.Last_Boss_Fight && Events.ready_to_fight && getNextInt(1) == 1 && area[row][column] === Art.Dead_Tree) {
-        this.background = Monsters.Head;
+        this.battle_background = Monsters.Head;
         this.isBattling = true;
         this.enemy = new Monster(Monsters.Head, 27, 0, 7, 0, 3, 0, 0, 0, getNextInt(4)+3, 1); // incoming enemy
       }
@@ -143,7 +149,7 @@ export default Vue.extend({
         //dialogue(dialogue,2,5);
 
         //Dead_Tree fight here
-        this.background = Monsters.Head;
+        this.battle_background = Monsters.Head;
         this.isBattling = true;
         this.enemy = new Monster(Monsters.Head, 27, 0, 7, 0, 3, 0, 0, 0, 4, 1); // incoming enemy
             
@@ -211,7 +217,7 @@ export default Vue.extend({
       if(Events.Last_Boss_Fight && area[row][column] === Art.Dead_Tree) {
         Events.Last_Boss_Fight = false;
         //Enemy object here, I'll make it a thief
-        this.background = Characters.Thief;
+        this.battle_background = Characters.Thief;
         this.isBattling = true;
         this.enemy = new Thief(54, 30, 10, 5, 11, 4, 15, 2); // for now there is no exp reward
       }
@@ -225,28 +231,28 @@ export default Vue.extend({
       switch(direction) {
         case Control.UP:
           if(row > 0) {
-            row--;
+            this.row--;
             this.events(); //events that occur after moving somewhere (includes changing the background)
           }
           break;
 
         case Control.DOWN:
           if(row < 1) {
-            row++;
+            this.row++;
             this.events(); //events that occur after moving somewhere (includes changing the background)
           }
           break;
 
         case Control.LEFT:
           if(column > 0) {
-            column--;
+            this.column--;
             this.events(); //events that occur after moving somewhere (includes changing the background)
           }
           break;
 
         case Control.RIGHT:
           if(column < 1) {
-            column ++;
+            this.column ++;
             this.events(); //events that occur after moving somewhere (includes changing the background)
           }
       }
@@ -254,43 +260,45 @@ export default Vue.extend({
   },
   components: {
     Map,
-    Menu
+    Menu,
+    BattleMenu
   },
   mounted(): void {
-    this.newGamePrompt = document.getElementById('gameScreen');
     let newGamePrompt = this.newGamePrompt;
-    if(newGamePrompt) {
-      let par: HTMLElement = createElement('p', { content: 'Choose your class:' });
-      newGamePrompt.appendChild(par);
 
-      let hero_btn: HTMLElement = createElement('button', { content: 'Hero', classes: ['nes-btn'] });
-      hero_btn.setAttribute('type', 'button');
-      hero_btn.onclick = () => {
-        this.player = new Hero();
-        this.killPromptChildren();
-        this.gameStart();
-      };
+    let par: HTMLElement = createElement('p', { content: 'Choose your class:' });
+    newGamePrompt.appendChild(par);
 
-      let mage_btn: HTMLElement = createElement('button', { content: 'Mage', classes: ['nes-btn'] });
-      mage_btn.setAttribute('type', 'button');
-      mage_btn.onclick = () => {
-        this.player = new Mage();
-        this.killPromptChildren(); // maybe make this a generic function that accepts an HTMLElement and does its thing
-        this.gameStart();
-      };
+    let hero_btn: HTMLElement = createElement('button', { content: 'Hero', classes: ['nes-btn'] });
+    hero_btn.setAttribute('type', 'button');
+    hero_btn.onclick = () => {
+      this.player = new Hero();
+      this.killPromptChildren();
+      this.gameStart();
+    };
 
-      let thief_btn: HTMLElement = createElement('button', { content: 'Thief', classes: ['nes-btn'] });
-      thief_btn.setAttribute('type', 'button');
-      thief_btn.onclick = () => {
-        this.player = new Thief();
-        this.killPromptChildren();
-        this.gameStart();
-      };
+    let mage_btn: HTMLElement = createElement('button', { content: 'Mage', classes: ['nes-btn'] });
+    mage_btn.setAttribute('type', 'button');
+    mage_btn.onclick = () => {
+      this.player = new Mage();
+      this.killPromptChildren(); // maybe make this a generic function that accepts an HTMLElement and does its thing
+      this.gameStart();
+    };
 
-      newGamePrompt.appendChild(hero_btn);
-      newGamePrompt.appendChild(mage_btn)
-      newGamePrompt.appendChild(thief_btn)
-    }
+    let thief_btn: HTMLElement = createElement('button', { content: 'Thief', classes: ['nes-btn'] });
+    thief_btn.setAttribute('type', 'button');
+    thief_btn.onclick = () => {
+      this.player = new Thief();
+      this.killPromptChildren();
+      this.gameStart();
+    };
+
+    newGamePrompt.appendChild(hero_btn);
+    newGamePrompt.appendChild(mage_btn)
+    newGamePrompt.appendChild(thief_btn)
+
+    let gameScreen: HTMLElement | null = document.getElementById('gameScreen');
+    if(gameScreen) gameScreen.appendChild(newGamePrompt);
   }
 });
 </script>

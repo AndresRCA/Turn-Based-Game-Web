@@ -5,7 +5,7 @@
 		<!-- left side -->
 		<article style="float: left;">
 			<!-- only shows on MAIN -->
-      <table class="nes-table is-bordered" v-show="state == Menu.MAIN">
+      <table class="nes-table is-bordered" v-show="state == 0"> <!-- check Menu enum -->
 				<tbody>
 					<tr>
 						<td @click="chooseMove(1)">
@@ -26,7 +26,7 @@
 				</tbody>
 			</table>
 			<!-- only shows on SELECT -->
-			<table class="nes-table is-bordered" v-show="state != Menu.SELECTSKILL">
+			<table class="nes-table is-bordered" v-show="state == 1"> <!-- check Menu enum -->
 				<tbody>
 					<tr>
 						<td @click="chooseMove(1)">
@@ -56,13 +56,13 @@
 			<p>
 				MP: <progress class="nes-progress is-primary" :value="this.$parent.$data.player.getMp()" :max="this.$parent.$data.player.getMax_mp()"></progress>
 			</p>
-			<button class="nes-btn" type="button" v-show="state != Menu.CONFIRMATION" @click="goFurther()">
+			<button class="nes-btn" type="button" v-show="state != 2" @click="goFurther()"> <!-- check Menu enum -->
 				select
 			</button>
-			<button class="nes-btn" type="button" v-show="state == Menu.CONFIRMATION" @click="playerTurn()">
+			<button class="nes-btn" type="button" v-show="state == 2" @click="playerTurn()"> <!-- check Menu enum -->
 				sure?
 			</button>
-			<button class="nes-btn" type="button" v-show="state != Menu.MAIN" @click="goBack()">
+			<button class="nes-btn" type="button" v-show="state != 0" @click="goBack()"> <!-- check Menu enum -->
 				go back
 			</button>
 		</article>
@@ -94,13 +94,9 @@ export default Vue.extend({
   	chooseMove(choice: number): void {
   		this.choice = choice;
   	},
-  	goFurther(): void {
-  		let choice = this.choice;
-  		let state = this.state;
-  		let parent = this.$parent.$data;
-
-  		if(state == Menu.MAIN && choice != 3) {
-  			switch(choice) {
+  	goFurther(): void {  		
+  		if(this.state == Menu.MAIN && this.choice != 3) {
+  			switch(this.choice) {
   				case 1: // Hit
   					this.playerTurn();
   					break;
@@ -113,14 +109,16 @@ export default Vue.extend({
   					this.drinkMpPotion();
   			}
 
+  			let parent = this.$parent.$data;
+
   			if(!this.enemyIsDead()) {
   				this.enemyTurn();
   				if(parent.player.getHp <= 0) {
   					// game over...
-  					state = Menu.MAIN; // go back to the main menu
+  					this.state = Menu.MAIN; // go back to the main menu
   				}
   				else {
-  					state = Menu.MAIN; // go back to the main menu
+  					this.state = Menu.MAIN; // go back to the main menu
   				}
   			}
   			else {
@@ -130,13 +128,13 @@ export default Vue.extend({
   			}
   		}
   		else {
-  			switch(state) {
+  			switch(this.state) {
 	  			case Menu.MAIN:
-	  				state = Menu.SELECTSKILL;
+	  				this.state = Menu.SELECTSKILL;
 	  				break;
 
 	  			case Menu.SELECTSKILL:
-	  				state = Menu.CONFIRMATION;
+	  				this.state = Menu.CONFIRMATION;
 	  				break;
 
 	  			case Menu.CONFIRMATION: break; // can't go further than this
@@ -152,19 +150,19 @@ export default Vue.extend({
   			case Menu.SELECTSKILL:
   				this.state = Menu.MAIN; // can't go further than this
   		}
-  	}
+  	},
   	changeState(newState: Menu): void {
   		this.state = newState;
   	},
   	playerTurn(): void {
   		let player = this.$parent.$data.player;
-  		let monster = this.$parent.$data.monster;
+  		let enemy = this.$parent.$data.enemy;
 
   		if(this.state == Menu.MAIN) { // normal attack  		
   			if(getNextInt(3) != 0) { // change this
-          if((player.attack() - monster.getDef()) >= 0){
-              console.log("You dealt "+(player.attack() - monster.getDef())+" damage!");
-              monster.setHp(monster.getHp() - (player.attack() - monster.getDef()));
+          if((player.attack() - enemy.getDef()) >= 0){
+              console.log("You dealt "+(player.attack() - enemy.getDef())+" damage!");
+              this.$parent.$data.enemy.setHp(enemy.getHp() - (player.attack() - enemy.getDef()));
           }
         }
         else {
@@ -172,7 +170,7 @@ export default Vue.extend({
         }
   		}
   		else { // a skill was used
-  			let damage = player.skills(this.choice, monster.getDef(), true);
+  			let damage = player.skills(this.choice, enemy.getDef(), true);
   			if(damage == PlayerStatus.WRONG_CHOICE) { // change skills, this would never happen
             console.log("You entered a wrong number");
         }
@@ -181,7 +179,7 @@ export default Vue.extend({
         }
         else if(damage != PlayerStatus.BUFF_USED && damage != PlayerStatus.NO_BUFF) {
             console.log("You dealt "+damage+" special damage!");
-            monster.setHp(monster.getHp() - damage);
+            this.$parent.$data.enemy.setHp(enemy.getHp() - damage);
         }
         else {
         	console.log("Status skill was used.");
@@ -190,63 +188,63 @@ export default Vue.extend({
   	},
   	enemyTurn(): void {
   		let player = this.$parent.$data.player;
-  		let monster = this.$parent.$data.monster;
+  		let enemy = this.$parent.$data.enemy;
 
-			console.log("Monster Turn: ");
+			console.log("Enemy Turn: ");
 			switch(getNextInt(2)) { // check this later
 				case 0:
-  				console.log("The monster missed his attack, Now's your chance!");
+  				console.log("The enemy missed his attack, Now's your chance!");
   				break;
 
 				case 1:
-  				if((monster.attack() - player.getDef()) < 0) {
-  					console.log("The monster dealt 0 damage!");
+  				if((enemy.attack() - player.getDef()) < 0) {
+  					console.log("The enemy dealt 0 damage!");
   				}
   				else {
-  					player.setHp(player.getHp() - (monster.attack() - player.getDef()));
-  					console.log("The monster dealt "+(monster.attack() - player.getDef())+" damage!");
+  					this.$parent.$data.player.setHp(player.getHp() - (enemy.attack() - player.getDef()));
+  					console.log("The enemy dealt "+(enemy.attack() - player.getDef())+" damage!");
   				}
   				break;
 
 				case 2:
-  				if(monster.getNumber_of_skills() > 0) {
-  					let monster_choice: number = getNextInt(monster.getNumber_of_skills());
+  				if(enemy.getNumber_of_skills() > 0) {
+  					let enemy_choice: number = getNextInt(enemy.getNumber_of_skills());
 
-  					let damage = monster.testChance(monster_choice,player.getDef());
+  					let damage = enemy.testChance(enemy_choice,player.getDef());
   					if(damage != -1) {
   						if(damage == -2) {
-  							if((monster.attack() - player.getDef()) < 0) {
-  								console.log("The monster dealt 0 damage!");
+  							if((enemy.attack() - player.getDef()) < 0) {
+  								console.log("The enemy dealt 0 damage!");
   							}
   							else {
-  								player.setHp(player.getHp() - (monster.attack() - player.getDef()));
-  								console.log("The monster dealt "+(monster.attack() - player.getDef())+" damage!");
+  								this.$parent.$data.player.setHp(player.getHp() - (enemy.attack() - player.getDef()));
+  								console.log("The enemy dealt "+(enemy.attack() - player.getDef())+" damage!");
   							}
   						}
   						else {
   							if(damage <= 0) {
-  								console.log("The monster dealt 0 special damage!");
+  								console.log("The enemy dealt 0 special damage!");
   							}
   							else {
-  								player.setHp(player.getHp() - damage);
-  								console.log("The monster dealt "+damage+" special damage!");
+  								this.$parent.$data.player.setHp(player.getHp() - damage);
+  								console.log("The enemy dealt "+damage+" special damage!");
   							}
   						}
   					}
   				}
   				else {
-  					if((monster.attack() - player.getDef()) <= 0) {
-  						console.log("The monster dealt 0 damage!");
+  					if((enemy.attack() - player.getDef()) <= 0) {
+  						console.log("The enemy dealt 0 damage!");
   					}
   					else {
-  						player.setHp(player.getHp() - (monster.attack() - player.getDef()));
-  						console.log("The monster dealt "+(monster.attack() - player.getDef())+" damage!");
+  						this.$parent.$data.player.setHp(player.getHp() - (enemy.attack() - player.getDef()));
+  						console.log("The enemy dealt "+(enemy.attack() - player.getDef())+" damage!");
   					}
   				}     
 			}
   	},
   	enemyIsDead(): boolean {
-  		return this.$parent.$data.monster <= 0;
+  		return this.$parent.$data.enemy <= 0;
   	},
   	battleIsOver(): void {
   		//  console.log("You have killed the monster!\n");
