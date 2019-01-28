@@ -1,5 +1,6 @@
 import { PlayerInt } from '../interfaces/PlayerInt';
 import { Mechanics } from '../interfaces/Mechanics';
+import { skill } from '../interfaces/skill';
 import { Player } from './Player';
 import { PlayerStatus, EnemyStatus } from '../enums/Status';
 import Characters from '../assets/characters';
@@ -114,14 +115,14 @@ export class Mage extends Player implements PlayerInt, Mechanics {
         return 0;
     }
 
-    public printSkills(): void {
-        console.log("1.Defense up (-9 mana)    2.Lighting (-7 mana)");
-        if(this.slowHeal_en){
-            console.log("3.Slow Heal (-5 mana)     ");
-        }
-        if(this.fireBlow_en){
-            console.log("4.Fire Blow (-10 mana)");
-        }
+    //implemented
+    public getSkills(): skill[] {
+        let skills: skill[] = [];
+        if(this.defenseUp_en) skills.push({ id: 1, name: 'Defense Up', mp_cost: 9 });
+        if(this.lighting_en) skills.push({ id: 2, name: 'Lighting', mp_cost: 7 });        
+        if(this.slowHeal_en) skills.push({ id: 3, name: 'Slow Heal', mp_cost: 5 });
+        if(this.fireBlow_en) skills.push({ id: 4, name: 'Fire Blow', mp_cost: 10 });
+        return skills;
     }
 
     public testChance(skill: number, enemy_def: number, recursion_stopper?: number): number {        

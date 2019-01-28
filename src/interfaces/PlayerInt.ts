@@ -1,4 +1,6 @@
+import { skill } from './skill';
+
 export interface PlayerInt {
 	lvlUp(): void;
-	printSkills(): void;
+	getSkills(): skill[];
 }

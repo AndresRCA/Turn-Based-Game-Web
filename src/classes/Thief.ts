@@ -1,5 +1,6 @@
 import { PlayerInt } from '../interfaces/PlayerInt';
 import { Mechanics } from '../interfaces/Mechanics';
+import { skill } from '../interfaces/skill';
 import { Player } from './Player';
 import { PlayerStatus, EnemyStatus } from '../enums/Status';
 import Characters from '../assets/characters';
@@ -166,14 +167,13 @@ export class Thief extends Player implements PlayerInt, Mechanics {
         return EnemyStatus.NO_SKILL_MP; // it will never return this
     }
     
-    public printSkills(): void {
-        console.log("1.Speed up (-6 mana)      2.Steal (-5 mana)");
-        if(this.doubleSlash_en){
-            console.log("3.Double Slash (-8 mana)  ");
-        }
-        if(this.strengthUp_en){
-            console.log("4.Strength Up (-6 mana)");
-        }
+    public getSkills(): skill[] {
+        let skills: skill[] = [];
+        if(this.speedUp_en) skills.push({ id: 1, name: 'Speed Up', mp_cost: 6 });
+        if(this.steal_en) skills.push({ id: 2, name: 'Steal', mp_cost: 5 });
+        if(this.doubleSlash_en) skills.push({ id: 3, name: 'Double Slash', mp_cost: 8 });
+        if(this.strengthUp_en) skills.push({ id: 4, name: 'Strength Up', mp_cost: 6 });
+        return skills;
     }
 
     /**

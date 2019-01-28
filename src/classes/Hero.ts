@@ -1,5 +1,6 @@
 import { PlayerInt } from '../interfaces/PlayerInt';
 import { Mechanics } from '../interfaces/Mechanics';
+import { skill } from '../interfaces/skill';
 import { Player } from './Player';
 import { PlayerStatus, EnemyStatus } from '../enums/Status';
 import Characters from '../assets/characters';
@@ -99,14 +100,13 @@ export class Hero extends Player implements PlayerInt, Mechanics {
     }
     
     //implemented
-    public printSkills(): void {
-        console.log("1.Wish (-9 mana)          2.Destroy (-4 mana)");
-        if(this.strengthUp_en){
-            console.log("3.Strength Up (-6 mana)   ");
-        }
-        if(this.judgement_en){
-            console.log("4.Judgement (-10 mana)");
-        }
+    public getSkills(): skill[] {
+        let skills: skill[] = [];
+        if(this.wish_en) skills.push({ id: 1, name: 'Wish', mp_cost: 9 });
+        if(this.crush_en) skills.push({ id: 2, name: 'Crush', mp_cost: 4 });        
+        if(this.strengthUp_en) skills.push({ id: 3, name: 'Strength Up', mp_cost: 6 });
+        if(this.judgement_en) skills.push({ id: 4, name: 'Judgement', mp_cost: 10 });
+        return skills;
     }
     
     /**

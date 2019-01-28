@@ -113,7 +113,6 @@ export default Vue.extend({
       }
     },
     gameStart(): void {
-      this.background = this.area[this.row][this.column];
       /*------------Events that occur after you arrive somewhere------------------------------------------*/
           
       // events(this.player, this.area, this.row, this.column, this.dialogue);

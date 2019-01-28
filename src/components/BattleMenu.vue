@@ -29,11 +29,12 @@
 			<table class="nes-table is-bordered" v-show="state == 1"> <!-- check Menu enum -->
 				<tbody>
 					<tr>
+						<!-- remember to render this dinamically according to the number of skills -->
 						<td @click="chooseMove(1)">
-							<strong v-show="choice == 1">*</strong>&nbsp;move 1
+							<strong v-show="choice == 1">*</strong>&nbsp;{{ skills[0].id }}.&nbsp;{{ skills[0].name }}&nbsp;(-{{ skills[0].mp_cost }} mp)
 						</td>
 						<td @click="chooseMove(2)">
-							<strong v-show="choice == 2">*</strong>&nbsp;move 2
+							<strong v-show="choice == 2">*</strong>&nbsp;{{ skills[1].id }}.&nbsp;{{ skills[1].name }}&nbsp;(-{{ skills[1].mp_cost }} mp)
 						</td>
 					</tr>
 					<tr>
@@ -56,10 +57,10 @@
 			<p>
 				MP: <progress class="nes-progress is-primary" :value="this.$parent.$data.player.getMp()" :max="this.$parent.$data.player.getMax_mp()"></progress>
 			</p>
-			<button class="nes-btn" type="button" v-show="state != 2" @click="goFurther()"> <!-- check Menu enum -->
+			<button class="nes-btn" type="button" v-show="state != 2" @click="((state == 0 && choice == 3) || state == 1)? goFurther() : noSkill()"> <!-- check Menu enum -->
 				select
 			</button>
-			<button class="nes-btn" type="button" v-show="state == 2" @click="playerTurn()"> <!-- check Menu enum -->
+			<button class="nes-btn" type="button" v-show="state == 2" @click="confrontation()"> <!-- check Menu enum -->
 				sure?
 			</button>
 			<button class="nes-btn" type="button" v-show="state != 0" @click="goBack()"> <!-- check Menu enum -->
@@ -73,11 +74,13 @@
 import Vue from 'vue';
 import { PlayerStatus } from '../enums/Status';
 import { getNextInt } from '../game_resources/ordinary_functions';
+import { skill } from '../interfaces/skill';
 
 enum Menu { MAIN, SELECTSKILL, CONFIRMATION }
 
 interface BattleMenu {
 	state: Menu;
+	skills: skill[];
 	choice: number;
 }
 
@@ -86,6 +89,7 @@ export default Vue.extend({
   data() {
   	let data: BattleMenu = {
   		state: Menu.MAIN,
+  		skills: this.$parent.$data.player.getSkills(),
   		choice: 1
   	};
   	return data;
@@ -95,50 +99,16 @@ export default Vue.extend({
   		this.choice = choice;
   	},
   	goFurther(): void {  		
-  		if(this.state == Menu.MAIN && this.choice != 3) {
-  			switch(this.choice) {
-  				case 1: // Hit
-  					this.playerTurn();
-  					break;
+			switch(this.state) {
+  			case Menu.MAIN:
+  				this.state = Menu.SELECTSKILL;
+  				break;
 
-  				case 2: // drink hp potion
-  					this.drinkHpPotion();
-  					break;
+  			case Menu.SELECTSKILL:
+  				this.state = Menu.CONFIRMATION;
+  				break;
 
-  				case 4: // drink mp potion
-  					this.drinkMpPotion();
-  			}
-
-  			let parent = this.$parent.$data;
-
-  			if(!this.enemyIsDead()) {
-  				this.enemyTurn();
-  				if(parent.player.getHp <= 0) {
-  					// game over...
-  					this.state = Menu.MAIN; // go back to the main menu
-  				}
-  				else {
-  					this.state = Menu.MAIN; // go back to the main menu
-  				}
-  			}
-  			else {
-  				this.battleIsOver(); // lol this battle is over  				
-  				parent.background = parent.area[parent.row][parent.column];
-  				parent.isBattling = false; // this is where the component gets destroyed, hopefully
-  			}
-  		}
-  		else {
-  			switch(this.state) {
-	  			case Menu.MAIN:
-	  				this.state = Menu.SELECTSKILL;
-	  				break;
-
-	  			case Menu.SELECTSKILL:
-	  				this.state = Menu.CONFIRMATION;
-	  				break;
-
-	  			case Menu.CONFIRMATION: break; // can't go further than this
-	  		}
+  			case Menu.CONFIRMATION: break; // can't go further than this
   		}
   	},
   	goBack() {
@@ -153,6 +123,69 @@ export default Vue.extend({
   	},
   	changeState(newState: Menu): void {
   		this.state = newState;
+  	},
+  	noSkill(): void {
+  		switch(this.choice) {
+				case 1: // Hit
+					this.playerTurn(); // player + enemy attacks, also test if fight is over
+					if(!this.enemyIsDead()) {
+						this.enemyTurn();
+						if(this.playerIsDead()) {
+							// game over...
+							console.log('you died');
+							this.state = Menu.MAIN; // go back to the main menu
+							this.$parent.$data.isBattling = false;
+						}
+						else {
+							this.state = Menu.MAIN; // go back to the main menu
+						}
+					}
+					else {
+						this.battleIsOver(); // lol this battle is over  				
+						this.$parent.$data.isBattling = false; // this is where the component gets destroyed, hopefully
+					}
+					break;
+
+				case 2: // drink hp potion
+					this.drinkHpPotion(); // player action
+					this.enemyTurn(); // enemy action
+					if(this.playerIsDead()) {
+						// game over...
+						console.log('you died');
+						this.state = Menu.MAIN; // go back to the main menu
+						this.$parent.$data.isBattling = false;
+					}
+					else {
+						this.state = Menu.MAIN; // go back to the main menu
+					}
+					break;
+
+				case 4: // drink mp potion
+					this.drinkMpPotion(); // player action
+					this.enemyTurn(); // enemy action
+					if(this.playerIsDead()) {
+						// game over...
+						console.log('you died');
+						this.state = Menu.MAIN; // go back to the main menu
+						this.$parent.$data.isBattling = false;
+					}
+					else {
+						this.state = Menu.MAIN; // go back to the main menu
+					}
+			}
+  	},
+  	confrontation(): void {
+  		this.playerTurn(); // player action
+			this.enemyTurn(); // enemy action
+			if(this.playerIsDead()) {
+				// game over...
+				console.log('you died');
+				this.state = Menu.MAIN; // go back to the main menu
+				this.$parent.$data.isBattling = false;
+			}
+			else {
+				this.state = Menu.MAIN; // go back to the main menu
+			}
   	},
   	playerTurn(): void {
   		let player = this.$parent.$data.player;
@@ -243,33 +276,41 @@ export default Vue.extend({
   				}     
 			}
   	},
+  	playerIsDead(): boolean {
+  		return this.$parent.$data.player.getHp() <= 0;
+  	},
   	enemyIsDead(): boolean {
-  		return this.$parent.$data.enemy <= 0;
+  		return this.$parent.$data.enemy.getHp() <= 0;
   	},
   	battleIsOver(): void {
-  		//  console.log("You have killed the monster!\n");
-  		// 	player.deBuff();
+  		let parent = this.$parent.$data;
+  		let player = parent.player;
+  		let enemy = parent.enemy
 
-  		// 	if((player.getExp() + monster.getExp()) >= player.getMax_exp()) {
-  		// 		int last_exp_capacity = player.getMax_exp();
+  		parent.battle_background = '';
+			console.log("You have killed the enemy!\n");
+			this.$parent.$data.player.deBuff();
 
-  		// 		console.log("Exp: "+player.getExp()+" (+"+monster.getExp()+")");
-  		// 		player.setExp(player.getExp() + monster.getExp());
-  		// 		//Should I ditch the current exp: *exp/max_exp* and just leave it as current exp: *exp*?
-  		// 		console.log("Current Exp: "+(player.getExp() - last_exp_capacity)+"/"+(last_exp_capacity + player.newMaxExp())+"\n");
+			if((player.getExp() + enemy.getExp()) >= player.getMax_exp()) {
+				let last_exp_capacity: number = player.getMax_exp();
 
-  		// 		player.lvlUp();
+				console.log("Exp: "+player.getExp()+" (+"+enemy.getExp()+")");
+				this.$parent.$data.player.setExp(player.getExp() + enemy.getExp());
+				//Should I ditch the current exp: *exp/max_exp* and just leave it as current exp: *exp*?
+				console.log("Current Exp: "+(player.getExp() - last_exp_capacity)+"/"+(last_exp_capacity + player.newMaxExp())+"\n");
 
-  		// 		player.setExp(player.getExp() - last_exp_capacity);
-  		// 		console.log("Next to level up: "+(player.getMax_exp() - player.getExp())+"\n");
-  		// 	}
-  		// 	else {
-  		// 		console.log("Exp: "+player.getExp()+" (+"+monster.getExp()+")");                   
-  		// 		player.setExp(player.getExp() + monster.getExp());
-  		// 		//Should I ditch the current exp: *exp/max_exp* and just leave it as current exp: *exp*?
-  		// 		console.log("Current Exp: "+player.getExp()+"/"+player.getMax_exp());
-  		// 		console.log("Next to level up: "+(player.getMax_exp() - player.getExp())+"\n");
-  		//	}
+				this.$parent.$data.player.lvlUp();
+
+				this.$parent.$data.player.setExp(player.getExp() - last_exp_capacity);
+				console.log("Next to level up: "+(player.getMax_exp() - player.getExp())+"\n");
+			}
+			else {
+				console.log("Exp: "+player.getExp()+" (+"+enemy.getExp()+")");                   
+				this.$parent.$data.player.setExp(player.getExp() + enemy.getExp());
+				//Should I ditch the current exp: *exp/max_exp* and just leave it as current exp: *exp*?
+				console.log("Current Exp: "+player.getExp()+"/"+player.getMax_exp());
+				console.log("Next to level up: "+(player.getMax_exp() - player.getExp())+"\n");
+			}
   	},
   	drinkHpPotion(): void {
   		this.$parent.$data.player.hpPotion();

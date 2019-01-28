@@ -75,8 +75,16 @@ export abstract class Unit {
         return this.str;
     }
 
+    public getMagic(): number {
+        return this.magic;
+    }
+
     public getDef(): number {
         return this.def;
+    }
+
+    public getSkill(): number {
+        return this.skill;
     }
 
     public getSpeed(): number {

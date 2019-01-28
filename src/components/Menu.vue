@@ -10,6 +10,13 @@
 		<p>
 			EXP: <progress class="nes-progress is-warning" :value="this.$parent.player.getExp()" :max="this.$parent.player.getMax_exp()"></progress>
 		</p>
+		<p>
+			str: {{ this.$parent.$data.player.getStr() }}<br>
+			def: {{ this.$parent.$data.player.getDef() }}<br>
+			magic: {{ this.$parent.$data.player.getMagic() }}<br>
+			skill: {{ this.$parent.$data.player.getSkill() }}<br>
+			speed: {{ this.$parent.$data.player.getSpeed() }}<br>
+		</p>
 	</main>
 </template>
 
